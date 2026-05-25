@@ -9,7 +9,7 @@ const seedIds = new Set(initialMediaItems.map((item) => item.id));
 // Determine dynamic API Base URL according to environment (local dev vs. live cloud hosting)
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:3000'
-  : window.location.origin;
+  : 'https://learning-hub-hjba.onrender.com';
 
 function normalizeStoredMedia(parsed) {
   if (Array.isArray(parsed)) {
