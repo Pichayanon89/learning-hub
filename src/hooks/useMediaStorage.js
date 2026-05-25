@@ -3,7 +3,7 @@ import { initialMediaItems } from '../data/mockData';
 import toast from 'react-hot-toast';
 
 const STORAGE_KEY = 'learning_center_media_p4_2_real_covers_v2';
-const STORAGE_REVISION = 'p4_2_real_covers_v3';
+const STORAGE_REVISION = 'p4_2_real_covers_pages_v4';
 const seedIds = new Set(initialMediaItems.map((item) => item.id));
 
 // Determine dynamic API Base URL according to environment (local dev vs. live cloud hosting)

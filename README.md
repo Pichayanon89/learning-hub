@@ -2,6 +2,8 @@
 
 เว็บแอปต้นแบบสำหรับจัดคลังสื่อการเรียนรู้ของครูพิชญานนท์ วัจนสุนทร โดยใช้ชุดสื่อจริงบางส่วนของห้อง ป.4/2 ปีการศึกษา 2569 เป็นข้อมูลตั้งต้น
 
+เว็บไซต์: https://pichayanon89.github.io/learning-hub/
+
 ## สิ่งที่มีในต้นแบบ
 
 - หน้าแรกสไตล์ Netflix for Education แบบ light theme
@@ -29,4 +31,10 @@ npm run dev
 ```bash
 npm run lint
 npm run build
+```
+
+สำหรับ GitHub Pages ใช้ GitHub Actions ใน `.github/workflows/pages.yml` โดย build เฉพาะ frontend:
+
+```bash
+npm run build:static
 ```

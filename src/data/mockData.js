@@ -15,6 +15,7 @@ import {
   subjectComputerCover,
   subjectWorkCover
 } from '../assets';
+import { publicPath } from '../utils/publicPath';
 
 export const grades = [
   { id: 'all', label: 'ทั้งหมด', helper: 'ดูทุกชั้น', color: 'blue', Icon: IconAllGrades },
@@ -108,7 +109,7 @@ export const initialMediaItems = [
     tags: 'STEM, ภารกิจ, ป.4/2, ออกแบบ, แก้ปัญหา',
     cover: subjectStemCover,
     thumbnail: subjectStemCover,
-    fileUrl: '/learning-media/p4-2/stem-school-mission.pdf',
+    fileUrl: publicPath('learning-media/p4-2/stem-school-mission.pdf'),
     isPublished: true,
   },
   {
@@ -129,7 +130,7 @@ export const initialMediaItems = [
     tags: 'การงาน, ความรับผิดชอบ, ภารกิจ, ป.4',
     cover: subjectWorkCover,
     thumbnail: subjectWorkCover,
-    fileUrl: '/learning-media/p4-2/responsibility-quest.pdf',
+    fileUrl: publicPath('learning-media/p4-2/responsibility-quest.pdf'),
     isPublished: true,
     quizQuestions: [
       {
@@ -174,7 +175,7 @@ export const initialMediaItems = [
     tags: 'วิทยาการคอม, นักประดิษฐ์, Digital, ป.4',
     cover: subjectComputerCover,
     thumbnail: subjectComputerCover,
-    fileUrl: '/learning-media/p4-2/digital-inventor-mission.pdf',
+    fileUrl: publicPath('learning-media/p4-2/digital-inventor-mission.pdf'),
     isPublished: true,
     quizQuestions: [
       {
@@ -219,7 +220,7 @@ export const initialMediaItems = [
     tags: 'สิ่งประดิษฐ์, Blueprint, STEM, ป.4',
     cover: subjectStemCover,
     thumbnail: subjectStemCover,
-    fileUrl: '/learning-media/p4-2/young-inventor-blueprint.pdf',
+    fileUrl: publicPath('learning-media/p4-2/young-inventor-blueprint.pdf'),
     isPublished: true,
   },
   {
@@ -240,7 +241,7 @@ export const initialMediaItems = [
     tags: 'isometric, กริด, เรขาคณิต, ออกแบบ',
     cover: subjectMathCover,
     thumbnail: subjectMathCover,
-    fileUrl: '/learning-media/p4-2/isometric-grid-paper.pdf',
+    fileUrl: publicPath('learning-media/p4-2/isometric-grid-paper.pdf'),
     isPublished: true,
   },
   {
@@ -261,7 +262,7 @@ export const initialMediaItems = [
     tags: 'isometric, ตัวอย่าง, สิ่งประดิษฐ์, ป.4',
     cover: subjectMathCover,
     thumbnail: subjectMathCover,
-    fileUrl: '/learning-media/p4-2/p4-pencil-holder-example.pdf',
+    fileUrl: publicPath('learning-media/p4-2/p4-pencil-holder-example.pdf'),
     isPublished: true,
   },
   {
@@ -282,7 +283,7 @@ export const initialMediaItems = [
     tags: 'คณิตสืบเสาะ, แบบทดสอบก่อนเรียน, Excel',
     cover: subjectMathCover,
     thumbnail: subjectMathCover,
-    fileUrl: '/learning-media/p4-2/math-inquiry-pretest-ch1.xls',
+    fileUrl: publicPath('learning-media/p4-2/math-inquiry-pretest-ch1.xls'),
     isPublished: true,
   },
   {
@@ -303,7 +304,7 @@ export const initialMediaItems = [
     tags: 'คำนวณ, แบบวัดพื้นฐาน, ป.4/2',
     cover: subjectMathCover,
     thumbnail: subjectMathCover,
-    fileUrl: '/learning-media/p4-2/p4-2-calculation-baseline.docx',
+    fileUrl: publicPath('learning-media/p4-2/p4-2-calculation-baseline.docx'),
     isPublished: true,
   },
 ]

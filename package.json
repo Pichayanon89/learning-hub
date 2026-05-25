@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build:static": "vite build",
     "build": "vite build && cd backend && npm install --production",
+    "deploy": "npm run build:static && gh-pages -d dist",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "node backend/src/app.js"
