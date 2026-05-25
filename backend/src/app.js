@@ -4,8 +4,12 @@ const userRoutes = require('./routes/userRoutes');
 const mediaRoutes = require('./routes/mediaRoutes');
 const authRoutes = require('./routes/authRoutes');
 const { errorHandler } = require('./middlewares/errorHandler');
+const initDatabase = require('./data/initDb');
 
 const app = express();
+
+// Initialize Database on startup
+initDatabase();
 
 app.use(express.json());
 
