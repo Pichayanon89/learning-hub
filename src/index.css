@@ -1,0 +1,45 @@
+:root {
+  --font:
+    "Noto Sans Thai", "Leelawadee UI", "Segoe UI", system-ui, -apple-system,
+    BlinkMacSystemFont, sans-serif;
+  --ink: #102033;
+  --muted: #5f6f82;
+  --line: #dce7f0;
+  --border: var(--line);
+  --text-light: var(--muted);
+  --soft-blue: #e8f8ff;
+  --blue: #0ea5e9;
+  --mint: #18a957;
+  --coral: #f97364;
+  color: var(--ink);
+  background: #ffffff;
+  font-family: var(--font);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background: #ffffff;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+img,
+svg {
+  flex-shrink: 0;
+}

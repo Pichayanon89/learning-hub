@@ -1,0 +1,24 @@
+{
+  "name": "คลังสื่อการเรียนรู้ ครูพิชญานนท์",
+  "short_name": "คลังสื่อครูก๊อก",
+  "description": "คลังเผยแพร่สื่อการเรียนรู้สะเต็มศึกษาและวิทยาการคอมพิวเตอร์ โรงเรียนอนุบาลหนองหานวิทยายน",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1329",
+  "theme_color": "#0f766e",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/school-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/school-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
