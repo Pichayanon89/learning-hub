@@ -1793,7 +1793,18 @@ input:focus-visible {
 .login-form { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
 .login-btn { width: 100%; justify-content: center; }
 .login-error { color: var(--coral); font-size: 0.9rem; margin-top: -8px; }
-.login-hint { font-size: 0.8rem; color: var(--text-light); margin-top: 20px; }
+.login-hint {
+  margin: -6px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #bdeff2;
+  border-radius: 12px;
+  background: #effdff;
+  color: #0f5f66;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: left;
+}
+.login-hint strong { font-size: 1rem; color: #0b3f45; }
 
 /* ========================== Admin Tab Navigation ========================== */
 .admin-tabs {
@@ -2876,5 +2887,4 @@ input:focus-visible {
     print-color-adjust: exact;
   }
 }
-
 

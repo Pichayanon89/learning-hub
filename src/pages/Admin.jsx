@@ -86,18 +86,20 @@ export default function Admin() {
           <form onSubmit={handleLogin} className="login-form">
             <input 
               type="password" 
-              placeholder="รหัสผ่าน" 
+              placeholder="รหัสผ่าน: admin1234" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="form-input"
               autoFocus
             />
+            <p className="login-hint">
+              Hint: <strong>admin1234</strong>
+            </p>
             {loginError && <div className="login-error">{loginError}</div>}
             <button type="submit" className="primary-cta login-btn">
               เข้าสู่ระบบ
             </button>
           </form>
-          <div className="login-hint">Hint: admin1234</div>
         </div>
       </div>
     );
