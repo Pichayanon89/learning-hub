@@ -11,6 +11,19 @@ const API_BASE = window.location.hostname === 'localhost' || window.location.hos
   ? 'http://localhost:3000'
   : 'https://learning-hub-hjba.onrender.com';
 
+function getItemSignature(item) {
+  return [
+    item.title?.trim().toLowerCase() || '',
+    item.grade || '',
+    item.type || '',
+    item.fileUrl?.trim().toLowerCase() || '',
+  ].join('|');
+}
+
+function saveLocalBackup(items) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ revision: STORAGE_REVISION, items }));
+}
+
 function normalizeStoredMedia(parsed) {
   if (Array.isArray(parsed)) {
     return { revision: null, items: parsed };
@@ -56,6 +69,18 @@ function loadLocalBackup() {
   }
 }
 
+function mergeRemoteWithLocal(remoteItems, localItems) {
+  const remoteHydrated = hydrateSeedMedia(remoteItems);
+  const remoteIds = new Set(remoteHydrated.map((item) => item.id));
+  const remoteSignatures = new Set(remoteHydrated.map(getItemSignature));
+  const localOnlyItems = localItems.filter((item) => {
+    if (seedIds.has(item.id) || remoteIds.has(item.id)) return false;
+    return !remoteSignatures.has(getItemSignature(item));
+  });
+
+  return [...localOnlyItems, ...remoteHydrated];
+}
+
 export function useMediaStorage() {
   const [mediaItems, setMediaItems] = useState(loadLocalBackup);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -70,12 +95,12 @@ export function useMediaStorage() {
         const data = await response.json();
         console.log('[PWA API] Loaded media data successfully from Node.js server!');
         
-        // Hydrate backend media items with dynamic cover images
-        const hydrated = hydrateSeedMedia(data);
+        // Preserve recently saved local items that may not have reached the remote API yet.
+        const hydrated = mergeRemoteWithLocal(data, loadLocalBackup());
         setMediaItems(hydrated);
         
         // Keep localStorage backup in sync
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ revision: STORAGE_REVISION, items: data }));
+        saveLocalBackup(hydrated);
       } catch (err) {
         console.warn('[PWA API] Server offline, running on local cache fallback:', err.message);
         // Fallback is already loaded as initial state, so we just log it
@@ -95,7 +120,7 @@ export function useMediaStorage() {
     
     // Save to local state and local backup fallback
     setMediaItems(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ revision: STORAGE_REVISION, items: updated }));
+    saveLocalBackup(updated);
     toast.success('เพิ่มสื่อใหม่เรียบร้อยแล้ว');
 
     // Attempt to write to real API
@@ -108,7 +133,11 @@ export function useMediaStorage() {
       if (response.ok) {
         const savedItem = await response.json();
         // Replace temp item with saved item containing actual backend server ID
-        setMediaItems(prev => prev.map(item => item.id === tempId ? { ...item, ...savedItem } : item));
+        setMediaItems(prev => {
+          const synced = prev.map(item => item.id === tempId ? { ...item, ...savedItem } : item);
+          saveLocalBackup(synced);
+          return synced;
+        });
         console.log('[PWA API] Successfully added media item to backend database.');
       }
     } catch (err) {
@@ -121,7 +150,7 @@ export function useMediaStorage() {
     
     // Save to local state and local backup fallback
     setMediaItems(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ revision: STORAGE_REVISION, items: updated }));
+    saveLocalBackup(updated);
     toast.success('แก้ไขข้อมูลเรียบร้อยแล้ว');
 
     // Attempt to write to real API
@@ -144,7 +173,7 @@ export function useMediaStorage() {
     
     // Save to local state and local backup fallback
     setMediaItems(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ revision: STORAGE_REVISION, items: updated }));
+    saveLocalBackup(updated);
     toast.success('ลบสื่อเรียบร้อยแล้ว');
 
     // Attempt to delete on real API
@@ -173,7 +202,7 @@ export function useMediaStorage() {
     
     // Save to local state and local backup fallback
     setMediaItems(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ revision: STORAGE_REVISION, items: updated }));
+    saveLocalBackup(updated);
 
     // Attempt to toggle on real API
     try {

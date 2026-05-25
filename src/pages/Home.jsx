@@ -20,6 +20,7 @@ export default function Home() {
   if (!isLoaded) return <div>Loading...</div>;
 
   const publishedMedia = mediaItems.filter(m => m.isPublished);
+  const latestMedia = [...publishedMedia].sort((a, b) => (b.id || 0) - (a.id || 0));
   const newMedia = publishedMedia.filter(m => m.new);
   const popularMedia = publishedMedia.filter(m => m.popular);
   const featuredMedia = publishedMedia.filter(m => m.featured);
@@ -80,6 +81,7 @@ export default function Home() {
           </div>
         </div>
 
+        <MediaRail title="เพิ่มล่าสุด" items={latestMedia} />
         <MediaRail title="มาใหม่" items={newMedia} />
         <MediaRail title="ยอดนิยม" items={popularMedia} />
         <MediaRail title="เหมาะกับคาบเรียนนี้" items={featuredMedia} />
