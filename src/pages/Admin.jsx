@@ -4,11 +4,14 @@ import {
   Search, FileText, TrendingUp, Download, Printer 
 } from 'lucide-react';
 import { useMediaStorage } from '../hooks/useMediaStorage';
+import { useSubjectCatalog } from '../hooks/useSubjectCatalog';
 import { grades, typeConfig } from '../data/mockData';
+import { findSubjectByName, getSubjectCoverOption } from '../data/subjects';
 import { schoolLogo, teacherOfficial } from '../assets';
 
 export default function Admin() {
   const { mediaItems, isLoaded, addMedia, editMedia, deleteMedia, togglePublish } = useMediaStorage();
+  const { subjects, coverOptions, addSubject, updateSubject, deleteSubject } = useSubjectCatalog();
   const [editingItem, setEditingItem] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -18,7 +21,7 @@ export default function Admin() {
   const [loginError, setLoginError] = useState('');
 
   // States for tab navigation
-  const [activeTab, setActiveTab] = useState('manage'); // 'manage' or 'report'
+  const [activeTab, setActiveTab] = useState('manage');
 
   // States for search and filtering
   const [searchTerm, setSearchTerm] = useState('');
@@ -226,6 +229,13 @@ export default function Admin() {
           onClick={() => setActiveTab('manage')}
         >
           จัดการสื่อการเรียนรู้
+        </button>
+        <button 
+          type="button" 
+          className={`tab-btn ${activeTab === 'subjects' ? 'active' : ''}`}
+          onClick={() => setActiveTab('subjects')}
+        >
+          รายวิชาและปก
         </button>
         <button 
           type="button" 
@@ -474,6 +484,7 @@ export default function Admin() {
               {(isAdding || editingItem) && (
                 <MediaForm 
                   initialData={editingItem} 
+                  subjects={subjects}
                   onSave={(data) => {
                     if (isAdding) {
                       addMedia(data);
@@ -492,6 +503,15 @@ export default function Admin() {
             </div>
           </div>
         </>
+      ) : activeTab === 'subjects' ? (
+        <SubjectManager
+          subjects={subjects}
+          coverOptions={coverOptions}
+          mediaItems={mediaItems}
+          onAddSubject={addSubject}
+          onUpdateSubject={updateSubject}
+          onDeleteSubject={deleteSubject}
+        />
       ) : (
         <>
           {/* TAB 2: Official Publishing Report */}
@@ -786,18 +806,162 @@ export default function Admin() {
   );
 }
 
-function MediaForm({ initialData, onSave, onCancel }) {
-  const [formData, setFormData] = useState(initialData || {
+function SubjectManager({ subjects, coverOptions, mediaItems, onAddSubject, onUpdateSubject, onDeleteSubject }) {
+  const [draft, setDraft] = useState({ name: '', coverId: coverOptions[0]?.id || 'stem' });
+  const [editingId, setEditingId] = useState(null);
+  const [editingDraft, setEditingDraft] = useState({ name: '', coverId: coverOptions[0]?.id || 'stem' });
+  const usageBySubject = mediaItems.reduce((acc, item) => {
+    acc[item.subject] = (acc[item.subject] || 0) + 1;
+    return acc;
+  }, {});
+
+  const handleAddSubject = (e) => {
+    e.preventDefault();
+    const added = onAddSubject(draft);
+    if (added) {
+      setDraft({ name: '', coverId: coverOptions[0]?.id || 'stem' });
+    }
+  };
+
+  const beginEdit = (subject) => {
+    setEditingId(subject.id);
+    setEditingDraft({ name: subject.name, coverId: subject.coverId });
+  };
+
+  const handleSaveEdit = (subjectId) => {
+    const updated = onUpdateSubject(subjectId, editingDraft);
+    if (updated) {
+      setEditingId(null);
+    }
+  };
+
+  const handleDeleteSubject = (subject) => {
+    const usageCount = usageBySubject[subject.name] || 0;
+    const message = usageCount > 0
+      ? `รายวิชา "${subject.name}" มีสื่ออยู่ ${usageCount} รายการ ต้องการลบจากตัวเลือกต่อไปหรือไม่? สื่อเดิมจะยังคงอยู่`
+      : `ต้องการลบรายวิชา "${subject.name}" หรือไม่?`;
+
+    if (window.confirm(message)) {
+      onDeleteSubject(subject.id);
+    }
+  };
+
+  return (
+    <div className="subject-manager no-print">
+      <div className="subject-manager-header">
+        <div>
+          <h3>รายวิชาและภาพปก</h3>
+          <p>กำหนดรายวิชาที่สอนและภาพปกที่จะใช้ในฟอร์มเพิ่มสื่อ</p>
+        </div>
+      </div>
+
+      <form className="subject-add-form" onSubmit={handleAddSubject}>
+        <div className="form-group">
+          <label>เพิ่มรายวิชาใหม่</label>
+          <input
+            className="form-input"
+            value={draft.name}
+            onChange={(e) => setDraft(prev => ({ ...prev, name: e.target.value }))}
+            placeholder="เช่น ภาษาไทย, ภาษาอังกฤษ, วิทยาศาสตร์"
+          />
+        </div>
+        <div className="form-group">
+          <label>ภาพปกเริ่มต้น</label>
+          <select
+            className="form-input"
+            value={draft.coverId}
+            onChange={(e) => setDraft(prev => ({ ...prev, coverId: e.target.value }))}
+          >
+            {coverOptions.map((option) => (
+              <option key={option.id} value={option.id}>{option.label}</option>
+            ))}
+          </select>
+        </div>
+        <button type="submit" className="primary-cta subject-add-button">
+          <Plus size={18} /> เพิ่มรายวิชา
+        </button>
+      </form>
+
+      <div className="subject-grid">
+        {subjects.map((subject) => {
+          const isEditing = editingId === subject.id;
+          const activeCover = getSubjectCoverOption(isEditing ? editingDraft.coverId : subject.coverId);
+
+          return (
+            <div className="subject-card" key={subject.id}>
+              <img src={activeCover.image} alt="" className="subject-card-cover" />
+              {isEditing ? (
+                <div className="subject-card-body">
+                  <label>
+                    ชื่อรายวิชา
+                    <input
+                      className="form-input"
+                      value={editingDraft.name}
+                      onChange={(e) => setEditingDraft(prev => ({ ...prev, name: e.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    ภาพปก
+                    <select
+                      className="form-input"
+                      value={editingDraft.coverId}
+                      onChange={(e) => setEditingDraft(prev => ({ ...prev, coverId: e.target.value }))}
+                    >
+                      {coverOptions.map((option) => (
+                        <option key={option.id} value={option.id}>{option.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="subject-card-actions">
+                    <button type="button" className="primary-cta compact-cta" onClick={() => handleSaveEdit(subject.id)}>
+                      <Save size={16} /> บันทึก
+                    </button>
+                    <button type="button" className="secondary-cta compact-cta" onClick={() => setEditingId(null)}>
+                      <X size={16} /> ยกเลิก
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="subject-card-body">
+                  <div>
+                    <strong>{subject.name}</strong>
+                    <span>{subject.coverLabel}</span>
+                    <small>ใช้ในสื่อ {usageBySubject[subject.name] || 0} รายการ</small>
+                  </div>
+                  <div className="subject-card-actions">
+                    <button type="button" className="admin-btn-action btn-edit" onClick={() => beginEdit(subject)} title="แก้ไขรายวิชา">
+                      <Edit2 size={16} />
+                    </button>
+                    <button type="button" className="admin-btn-action btn-delete" onClick={() => handleDeleteSubject(subject)} title="ลบรายวิชา">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function buildMediaFormData(initialData, subjects) {
+  const fallbackSubject = subjects[0];
+  const matchedSubject = findSubjectByName(subjects, initialData?.subject) || fallbackSubject;
+  const baseData = initialData || {
     title: '',
     description: '',
     grade: 'p1',
     gradeLabel: 'ป.1',
-    subject: 'วิทยาศาสตร์',
+    subject: matchedSubject?.name || 'STEM',
     type: 'video',
     duration: '',
-    palette: 'blue',
+    palette: matchedSubject?.palette || 'motion',
     tags: '',
-    thumbnail: '',
+    coverId: matchedSubject?.coverId || 'stem',
+    cover: matchedSubject?.cover || '',
+    thumbnail: matchedSubject?.cover || '',
     fileUrl: '',
     isPublished: true,
     views: 0,
@@ -805,7 +969,41 @@ function MediaForm({ initialData, onSave, onCancel }) {
     featured: false,
     popular: false,
     new: true
-  });
+  };
+
+  return {
+    ...baseData,
+    subject: matchedSubject?.name || baseData.subject,
+    coverId: matchedSubject?.coverId || baseData.coverId || 'stem',
+    cover: matchedSubject?.cover || baseData.cover,
+    thumbnail: matchedSubject?.cover || baseData.thumbnail,
+    palette: matchedSubject?.palette || baseData.palette,
+  };
+}
+
+function getMediaFormSubjects(initialData, subjects) {
+  if (!initialData?.subject || findSubjectByName(subjects, initialData.subject)) {
+    return subjects;
+  }
+
+  const coverOption = getSubjectCoverOption(initialData.coverId);
+  return [
+    {
+      id: 'current-media-subject',
+      name: initialData.subject,
+      coverId: coverOption.id,
+      coverLabel: 'รายวิชาเดิมของสื่อนี้',
+      cover: initialData.cover || coverOption.image,
+      palette: initialData.palette || coverOption.palette,
+    },
+    ...subjects,
+  ];
+}
+
+function MediaForm({ initialData, subjects, onSave, onCancel }) {
+  const formSubjects = getMediaFormSubjects(initialData, subjects);
+  const [formData, setFormData] = useState(() => buildMediaFormData(initialData, formSubjects));
+  const selectedSubject = findSubjectByName(formSubjects, formData.subject) || formSubjects[0];
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -817,6 +1015,11 @@ function MediaForm({ initialData, onSave, onCancel }) {
     const gradeObj = grades.find(g => g.id === formData.grade);
     const dataToSave = {
       ...formData,
+      subject: selectedSubject?.name || formData.subject,
+      coverId: selectedSubject?.coverId || formData.coverId,
+      cover: selectedSubject?.cover || formData.cover,
+      thumbnail: selectedSubject?.cover || formData.thumbnail,
+      palette: selectedSubject?.palette || formData.palette,
       gradeLabel: formData.grade === 'all' ? 'ทุกชั้นปี' : gradeObj?.label || formData.gradeLabel
     };
     
@@ -828,6 +1031,18 @@ function MediaForm({ initialData, onSave, onCancel }) {
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleSubjectChange = (e) => {
+    const subject = findSubjectByName(formSubjects, e.target.value) || formSubjects[0];
+    setFormData(prev => ({
+      ...prev,
+      subject: subject.name,
+      coverId: subject.coverId,
+      cover: subject.cover,
+      thumbnail: subject.cover,
+      palette: subject.palette,
     }));
   };
 
@@ -855,6 +1070,30 @@ function MediaForm({ initialData, onSave, onCancel }) {
             placeholder="รายละเอียดและคำอธิบายเพิ่มเติมเกี่ยวกับเนื้อหาสื่อ..."
             className="form-input form-textarea" 
           />
+        </div>
+
+        <div className="form-row-2col">
+          <div className="form-group">
+            <label>รายวิชาที่สอน</label>
+            <select name="subject" value={formData.subject} onChange={handleSubjectChange} className="form-input">
+              {formSubjects.map((subject) => (
+                <option key={subject.id} value={subject.name}>{subject.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>ภาพปกตามรายวิชา</label>
+            <div className="subject-cover-preview">
+              {selectedSubject?.cover && (
+                <img src={selectedSubject.cover} alt="" />
+              )}
+              <div>
+                <strong>{selectedSubject?.name || formData.subject}</strong>
+                <span>{selectedSubject?.coverLabel || 'ใช้ภาพปกจากรายวิชา'}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="form-row-2col">
