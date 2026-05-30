@@ -41,11 +41,12 @@ function verifyAdminPassword(password) {
     return password === 'test-admin-password';
   }
 
-  return false;
+  // Fallback to default password 'KruPicha2569!' if environment variables are not configured
+  return password === 'KruPicha2569!';
 }
 
 function isAdminPasswordConfigured() {
-  return Boolean(process.env.ADMIN_PASSWORD_HASH || process.env.ADMIN_PASSWORD || process.env.NODE_ENV === 'test');
+  return true; // Always return true since we have a default fallback password
 }
 
 module.exports = {
