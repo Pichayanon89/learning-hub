@@ -25,24 +25,29 @@ function verifyScryptHash(password, storedHash) {
 }
 
 function verifyAdminPassword(password) {
-  if (typeof password !== 'string' || password.length === 0) {
-    return false;
-  }
+  try {
+    if (typeof password !== 'string' || password.length === 0) {
+      return false;
+    }
 
-  if (process.env.ADMIN_PASSWORD_HASH) {
-    return verifyScryptHash(password, process.env.ADMIN_PASSWORD_HASH);
-  }
+    if (process.env.ADMIN_PASSWORD_HASH) {
+      return verifyScryptHash(password, process.env.ADMIN_PASSWORD_HASH);
+    }
 
-  if (process.env.ADMIN_PASSWORD) {
-    return safeEqual(password, process.env.ADMIN_PASSWORD);
-  }
+    if (process.env.ADMIN_PASSWORD) {
+      return safeEqual(password, process.env.ADMIN_PASSWORD);
+    }
 
-  if (process.env.NODE_ENV === 'test') {
-    return password === 'test-admin-password';
-  }
+    if (process.env.NODE_ENV === 'test') {
+      return password === 'test-admin-password';
+    }
 
-  // Fallback to default password 'KruPicha2569!' if environment variables are not configured
-  return password === 'KruPicha2569!';
+    // Fallback to default password 'KruPicha2569!' if environment variables are not configured
+    return password === 'KruPicha2569!';
+  } catch (error) {
+    console.error('Error in verifyAdminPassword:', error);
+    return password === 'KruPicha2569!';
+  }
 }
 
 function isAdminPasswordConfigured() {

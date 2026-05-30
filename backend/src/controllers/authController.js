@@ -9,7 +9,7 @@ const adminUser = {
 
 const login = (req, res, next) => {
   try {
-    const { password } = req.body;
+    const { password } = req.body || {};
 
     res.setHeader('Cache-Control', 'no-store');
 
