@@ -1,9 +1,9 @@
-const CACHE_NAME = 'learning-center-pwa-cache-v1';
+const CACHE_NAME = 'learning-center-pwa-cache-v3';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/favicon.svg',
-  '/icons.svg',
+  new URL('./', self.registration.scope).toString(),
+  new URL('index.html', self.registration.scope).toString(),
+  new URL('favicon.svg', self.registration.scope).toString(),
+  new URL('icons.svg', self.registration.scope).toString(),
 ];
 
 // Install Event: Cache Shell assets
@@ -52,7 +52,7 @@ self.addEventListener('fetch', (event) => {
         // Offline: Serve cached page, or fallback to shell index.html
         return caches.match(event.request).then((cachedResponse) => {
           if (cachedResponse) return cachedResponse;
-          return caches.match('/index.html');
+          return caches.match(new URL('index.html', self.registration.scope).toString());
         });
       })
     );
