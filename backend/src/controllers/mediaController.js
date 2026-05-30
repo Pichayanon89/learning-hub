@@ -1,11 +1,24 @@
+const fs = require('fs');
+const path = require('path');
 const pool = require('../data/db');
+
+function readFallbackMedia() {
+  const mediaPath = path.join(__dirname, '../data/media.json');
+  const rawMedia = fs.readFileSync(mediaPath, 'utf8');
+  return JSON.parse(rawMedia);
+}
 
 const getMedia = async (req, res, next) => {
   try {
     const { rows } = await pool.query('SELECT * FROM media_items ORDER BY id DESC');
     res.status(200).json(rows);
   } catch (error) {
-    next(error);
+    try {
+      console.warn('[Media API] Database unavailable, serving bundled media fallback:', error.message);
+      res.status(200).json(readFallbackMedia());
+    } catch (fallbackError) {
+      next(fallbackError);
+    }
   }
 };
 
