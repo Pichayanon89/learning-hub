@@ -38,3 +38,17 @@ npm run build
 ```bash
 npm run build:static
 ```
+
+## ตั้งค่าความปลอดภัยหลังบ้าน
+
+Backend ต้องมีค่า environment variables ก่อนใช้งานหลังบ้านจริง:
+
+- `ADMIN_PASSWORD` หรือ `ADMIN_PASSWORD_HASH` สำหรับรหัสผ่านครู
+- `AUTH_TOKEN_SECRET` สำหรับเซ็น session token
+- `CORS_ORIGINS` ให้คงไว้เฉพาะโดเมนที่อนุญาต เช่น `https://pichayanon89.github.io`
+
+แนะนำให้ใช้ `ADMIN_PASSWORD_HASH` แทนรหัสผ่านตรง ๆ โดยสร้างค่า hash ด้วยคำสั่งนี้:
+
+```bash
+node -e "const crypto=require('crypto'); const password=process.argv[1]; const salt=crypto.randomBytes(16).toString('hex'); crypto.scrypt(password,salt,64,(err,key)=>{if(err) throw err; console.log(`${salt}:${key.toString('hex')}`)})" "ใส่รหัสผ่านใหม่ตรงนี้"
+```

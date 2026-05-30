@@ -6,13 +6,14 @@ const {
   deleteMedia,
   togglePublish
 } = require('../controllers/mediaController');
+const { requireAdminAuth } = require('../middlewares/requireAdminAuth');
 
 const router = express.Router();
 
 router.get('/', getMedia);
-router.post('/', createMedia);
-router.put('/:id', updateMedia);
-router.delete('/:id', deleteMedia);
-router.patch('/:id/publish', togglePublish);
+router.post('/', requireAdminAuth, createMedia);
+router.put('/:id', requireAdminAuth, updateMedia);
+router.delete('/:id', requireAdminAuth, deleteMedia);
+router.patch('/:id/publish', requireAdminAuth, togglePublish);
 
 module.exports = router;

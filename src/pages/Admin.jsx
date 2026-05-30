@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   Plus, Edit2, Trash2, Eye, EyeOff, Save, X, Lock, LogOut, 
   Search, FileText, TrendingUp, Download, Printer 
@@ -8,17 +8,32 @@ import { useSubjectCatalog } from '../hooks/useSubjectCatalog';
 import { grades, typeConfig } from '../data/mockData';
 import { findSubjectByName, getSubjectCoverOption } from '../data/subjects';
 import { schoolLogo, teacherOfficial } from '../assets';
+import { ADMIN_SESSION_EVENT, clearAdminSession, readAdminSession, saveAdminSession } from '../utils/adminSession';
+
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000'
+  : 'https://learning-hub-hjba.onrender.com';
+
+function formatSessionExpiry(expiresAt) {
+  const time = new Date(expiresAt);
+  if (Number.isNaN(time.getTime())) return '';
+
+  return new Intl.DateTimeFormat('th-TH', {
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(time);
+}
 
 export default function Admin() {
   const { mediaItems, isLoaded, addMedia, editMedia, deleteMedia, togglePublish } = useMediaStorage();
   const { subjects, coverOptions, addSubject, updateSubject, deleteSubject } = useSubjectCatalog();
   const [editingItem, setEditingItem] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return sessionStorage.getItem('isAdminAuth') === 'true';
-  });
+  const [adminSession, setAdminSession] = useState(() => readAdminSession());
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const isAuthenticated = Boolean(adminSession);
 
   // States for tab navigation
   const [activeTab, setActiveTab] = useState('manage');
@@ -29,50 +44,80 @@ export default function Admin() {
   const [selectedGrade, setSelectedGrade] = useState('');
   const [sortBy, setSortBy] = useState('latest');
 
+  useEffect(() => {
+    if (!adminSession) return undefined;
+
+    const syncSession = () => {
+      const currentSession = readAdminSession();
+      setAdminSession(currentSession);
+      if (!currentSession) {
+        setLoginError('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+      }
+    };
+    const expiresAt = new Date(adminSession.expiresAt).getTime();
+    const timeoutMs = Math.max(expiresAt - Date.now(), 0);
+    const timeoutId = window.setTimeout(syncSession, timeoutMs);
+
+    window.addEventListener('focus', syncSession);
+    window.addEventListener(ADMIN_SESSION_EVENT, syncSession);
+    document.addEventListener('visibilitychange', syncSession);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener('focus', syncSession);
+      window.removeEventListener(ADMIN_SESSION_EVENT, syncSession);
+      document.removeEventListener('visibilitychange', syncSession);
+    };
+  }, [adminSession]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
-    
-    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:3000'
-      : 'https://learning-hub-hjba.onrender.com';
 
-    // Attempt real API login
+    if (!password.trim()) {
+      setLoginError('กรุณากรอกรหัสผ่าน');
+      return;
+    }
+
+    setIsLoggingIn(true);
+    setLoginError('');
+
     try {
       const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ password }),
+        cache: 'no-store'
       });
-      
-      const data = await response.json();
-      
-      if (response.ok && data.success) {
-        setIsAuthenticated(true);
-        sessionStorage.setItem('isAdminAuth', 'true');
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data.success && data.token && data.expiresAt) {
+        const nextSession = {
+          token: data.token,
+          expiresAt: data.expiresAt,
+          user: data.user || null
+        };
+
+        saveAdminSession(nextSession);
+        setAdminSession(nextSession);
+        setPassword('');
         setLoginError('');
-        console.log('[PWA API] Successfully logged in via Node.js server authority.');
-        return;
-      } else {
-        setLoginError(data.message || 'รหัสผ่านไม่ถูกต้อง');
         return;
       }
+
+      setLoginError(data.message || 'รหัสผ่านไม่ถูกต้อง');
     } catch (err) {
-      console.warn('[PWA API] Login API offline, checking local password authority:', err.message);
-      // Fallback local authentication
-      if (password === 'admin1234') {
-        setIsAuthenticated(true);
-        sessionStorage.setItem('isAdminAuth', 'true');
-        setLoginError('');
-      } else {
-        setLoginError('รหัสผ่านไม่ถูกต้อง');
-      }
+      console.warn('[PWA API] Login API unavailable:', err.message);
+      setLoginError('เชื่อมต่อระบบหลังบ้านไม่ได้ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('isAdminAuth');
+    clearAdminSession();
+    setAdminSession(null);
     setPassword('');
+    setLoginError('');
   };
 
   if (!isLoaded) return <div>Loading...</div>;
@@ -89,18 +134,19 @@ export default function Admin() {
           <form onSubmit={handleLogin} className="login-form">
             <input 
               type="password" 
-              placeholder="รหัสผ่าน: admin1234" 
+              placeholder="กรอกรหัสผ่านหลังบ้าน"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="form-input"
               autoFocus
+              autoComplete="current-password"
             />
             <p className="login-hint">
-              Hint: <strong>admin1234</strong>
+              ระบบจะล็อกชั่วคราวเมื่อกรอกรหัสผิดหลายครั้ง
             </p>
             {loginError && <div className="login-error">{loginError}</div>}
-            <button type="submit" className="primary-cta login-btn">
-              เข้าสู่ระบบ
+            <button type="submit" className="primary-cta login-btn" disabled={isLoggingIn}>
+              {isLoggingIn ? 'กำลังตรวจสอบ...' : 'เข้าสู่ระบบ'}
             </button>
           </form>
         </div>
@@ -214,7 +260,10 @@ export default function Admin() {
           <h2 id="admin-title">หลังบ้านครู (ระบบจัดการเนื้อหา)</h2>
           <p>จัดการสื่อการเรียนรู้ แผงสถิติ และจัดพิมพ์สรุปรายงานเสนอราชการ</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div className="admin-session-actions">
+          {adminSession?.expiresAt && (
+            <span className="admin-session-note">เซสชันถึง {formatSessionExpiry(adminSession.expiresAt)} น.</span>
+          )}
           <button className="secondary-cta" onClick={handleLogout} title="ออกจากระบบ">
             <LogOut size={18} /> ออกจากระบบ
           </button>
@@ -678,9 +727,9 @@ export default function Admin() {
                       className="css-donut-chart" 
                       style={{
                         background: `conic-gradient(
-                          #0f766e 0% ${videoPct}%, 
-                          #10b981 ${videoPct}% ${videoPct + worksheetPct}%, 
-                          #f59e0b ${videoPct + worksheetPct}% ${videoPct + worksheetPct + slidePct}%, 
+                          #0f766e 0% ${videoPct}%,
+                          #10b981 ${videoPct}% ${videoPct + worksheetPct}%,
+                          #f59e0b ${videoPct + worksheetPct}% ${videoPct + worksheetPct + slidePct}%,
                           #ef4444 ${videoPct + worksheetPct + slidePct}% 100%
                         )`
                       }}

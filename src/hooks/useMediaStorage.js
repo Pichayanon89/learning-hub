@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { initialMediaItems } from '../data/mockData';
 import toast from 'react-hot-toast';
+import { clearAdminSession, getAdminAuthToken } from '../utils/adminSession';
 
 const STORAGE_KEY = 'learning_center_media_p4_2_real_covers_v2';
 const STORAGE_REVISION = 'p4_2_real_covers_pages_v4';
@@ -81,6 +82,36 @@ function mergeRemoteWithLocal(remoteItems, localItems) {
   return [...localOnlyItems, ...remoteHydrated];
 }
 
+function getMutationHeaders(includeJson = false) {
+  const token = getAdminAuthToken();
+  if (!token) return null;
+
+  return {
+    ...(includeJson ? { 'Content-Type': 'application/json' } : {}),
+    Authorization: `Bearer ${token}`
+  };
+}
+
+async function assertWriteResponse(response) {
+  if (response.status === 401 || response.status === 403) {
+    clearAdminSession();
+    throw new Error('AUTH_REQUIRED');
+  }
+
+  if (!response.ok) {
+    throw new Error(`API server returned ${response.status}`);
+  }
+}
+
+function showWriteWarning(error) {
+  if (error.message === 'AUTH_REQUIRED') {
+    toast.error('เซสชันหลังบ้านหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+    return;
+  }
+
+  toast.error('บันทึกไว้เฉพาะเครื่องนี้ ยังไม่ซิงก์ขึ้นระบบกลาง');
+}
+
 export function useMediaStorage() {
   const [mediaItems, setMediaItems] = useState(loadLocalBackup);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -125,22 +156,25 @@ export function useMediaStorage() {
 
     // Attempt to write to real API
     try {
+      const headers = getMutationHeaders(true);
+      if (!headers) throw new Error('AUTH_REQUIRED');
+
       const response = await fetch(`${API_BASE}/api/media`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(newItem)
       });
-      if (response.ok) {
-        const savedItem = await response.json();
-        // Replace temp item with saved item containing actual backend server ID
-        setMediaItems(prev => {
-          const synced = prev.map(item => item.id === tempId ? { ...item, ...savedItem } : item);
-          saveLocalBackup(synced);
-          return synced;
-        });
-        console.log('[PWA API] Successfully added media item to backend database.');
-      }
+      await assertWriteResponse(response);
+      const savedItem = await response.json();
+      // Replace temp item with saved item containing actual backend server ID
+      setMediaItems(prev => {
+        const synced = prev.map(item => item.id === tempId ? { ...item, ...savedItem } : item);
+        saveLocalBackup(synced);
+        return synced;
+      });
+      console.log('[PWA API] Successfully added media item to backend database.');
     } catch (err) {
+      showWriteWarning(err);
       console.warn('[PWA API] Failed to add media on server, synced to local cache only.', err);
     }
   };
@@ -155,15 +189,18 @@ export function useMediaStorage() {
 
     // Attempt to write to real API
     try {
+      const headers = getMutationHeaders(true);
+      if (!headers) throw new Error('AUTH_REQUIRED');
+
       const response = await fetch(`${API_BASE}/api/media/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(updatedItem)
       });
-      if (response.ok) {
-        console.log('[PWA API] Successfully updated media item on backend database.');
-      }
+      await assertWriteResponse(response);
+      console.log('[PWA API] Successfully updated media item on backend database.');
     } catch (err) {
+      showWriteWarning(err);
       console.warn('[PWA API] Failed to update media on server, synced to local cache only.', err);
     }
   };
@@ -178,13 +215,17 @@ export function useMediaStorage() {
 
     // Attempt to delete on real API
     try {
+      const headers = getMutationHeaders();
+      if (!headers) throw new Error('AUTH_REQUIRED');
+
       const response = await fetch(`${API_BASE}/api/media/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers
       });
-      if (response.ok) {
-        console.log('[PWA API] Successfully deleted media item from backend database.');
-      }
+      await assertWriteResponse(response);
+      console.log('[PWA API] Successfully deleted media item from backend database.');
     } catch (err) {
+      showWriteWarning(err);
       console.warn('[PWA API] Failed to delete media on server, synced to local cache only.', err);
     }
   };
@@ -206,13 +247,17 @@ export function useMediaStorage() {
 
     // Attempt to toggle on real API
     try {
+      const headers = getMutationHeaders();
+      if (!headers) throw new Error('AUTH_REQUIRED');
+
       const response = await fetch(`${API_BASE}/api/media/${id}/publish`, {
-        method: 'PATCH'
+        method: 'PATCH',
+        headers
       });
-      if (response.ok) {
-        console.log('[PWA API] Successfully toggled media publish status on backend.');
-      }
+      await assertWriteResponse(response);
+      console.log('[PWA API] Successfully toggled media publish status on backend.');
     } catch (err) {
+      showWriteWarning(err);
       console.warn('[PWA API] Failed to toggle publish on server, synced to local cache only.', err);
     }
   };
