@@ -1,4 +1,4 @@
-const CACHE_NAME = 'learning-center-pwa-cache-v2';
+const CACHE_NAME = 'learning-center-pwa-cache-v3';
 const ASSETS_TO_CACHE = [
   new URL('./', self.registration.scope).toString(),
   new URL('index.html', self.registration.scope).toString(),
